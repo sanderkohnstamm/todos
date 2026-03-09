@@ -2,15 +2,19 @@ import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
-import { keymap } from '@codemirror/view';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { keymap, drawSelection } from '@codemirror/view';
+import { indentWithTab } from '@codemirror/commands';
+import { palettes, applyPalette } from './themes.js';
 
 const { invoke } = window.__TAURI__.tauri;
 
 let todoView = null;
 let finishedView = null;
 let focusedPane = 'todo';
+let finishedVisible = true;
+let currentPalette = 0;
 let statusTimeout = null;
+let autoSaveTimeout = null;
 
 function showMessage(msg) {
   const el = document.getElementById('status-message');
@@ -42,12 +46,17 @@ function getCursorLine(view) {
   return view.state.doc.lineAt(pos).number - 1;
 }
 
-async function save() {
+async function save(silent) {
   const todo = todoView.state.doc.toString();
   const finished = finishedView.state.doc.toString();
-  const msg = await invoke('save_files', { todo, finished });
+  await invoke('save_files', { todo, finished });
   clearDirty();
-  showMessage(msg);
+  if (!silent) showMessage('Saved');
+}
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimeout);
+  autoSaveTimeout = setTimeout(() => save(true), 1000);
 }
 
 async function completeItem() {
@@ -66,6 +75,7 @@ async function completeItem() {
     finishedView.dispatch({
       changes: { from: 0, to: finishedView.state.doc.length, insert: result.finished },
     });
+    await save(true);
     showMessage(result.message);
   } else {
     const finished = finishedView.state.doc.toString();
@@ -81,6 +91,7 @@ async function completeItem() {
       changes: { from: 0, to: finishedView.state.doc.length, insert: result.finished },
       selection: { anchor: cursorPos },
     });
+    await save(true);
     showMessage(result.message);
   }
 }
@@ -89,6 +100,7 @@ function createEditor(parent, content, pane) {
   const changeListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
       markDirty(pane);
+      scheduleAutoSave();
     }
     if (update.focusChanged && update.view.hasFocus) {
       focusedPane = pane;
@@ -112,8 +124,8 @@ function createEditor(parent, content, pane) {
     extensions: [
       customKeymap,
       basicSetup,
+      keymap.of([indentWithTab]),
       markdown({ base: markdownLanguage, codeLanguages: languages }),
-      oneDark,
       changeListener,
       EditorView.lineWrapping,
     ],
@@ -122,13 +134,50 @@ function createEditor(parent, content, pane) {
   return new EditorView({ state, parent });
 }
 
-// Ctrl+Tab to switch panes
+function toggleFinishedPane() {
+  finishedVisible = !finishedVisible;
+  const finishedPane = document.getElementById('finished-pane');
+  const divider = document.querySelector('.divider');
+  if (finishedVisible) {
+    finishedPane.style.display = '';
+    divider.style.display = '';
+    showMessage('Finished pane shown');
+  } else {
+    finishedPane.style.display = 'none';
+    divider.style.display = 'none';
+    focusedPane = 'todo';
+    updateFocus();
+    todoView.focus();
+    showMessage('Finished pane hidden');
+  }
+}
+
+function cyclePalette() {
+  currentPalette = (currentPalette + 1) % palettes.length;
+  const p = palettes[currentPalette];
+  applyPalette(p);
+  showMessage(`Theme: ${p.name}`);
+}
+
+// Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Tab') {
+  if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
     e.preventDefault();
+    if (!finishedVisible) {
+      toggleFinishedPane();
+      return;
+    }
     focusedPane = focusedPane === 'todo' ? 'finished' : 'todo';
     updateFocus();
     getActiveView().focus();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+    e.preventDefault();
+    toggleFinishedPane();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    cyclePalette();
   }
 });
 
@@ -147,6 +196,7 @@ async function init() {
     'finished'
   );
 
+  applyPalette(palettes[currentPalette]);
   focusedPane = 'todo';
   updateFocus();
   todoView.focus();

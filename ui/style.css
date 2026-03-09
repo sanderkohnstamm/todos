@@ -18,6 +18,9 @@
   --teal: #94e2d5;
   --border: #45475a;
   --status-bg: #11111b;
+  --selection-bg: rgba(137, 180, 250, 0.25);
+  --active-line: rgba(49, 50, 68, 0.5);
+  --code-bg: rgba(166, 227, 161, 0.1);
 }
 
 html, body {
@@ -138,7 +141,7 @@ html, body {
 }
 
 .cm-editor .cm-activeLine {
-  background: rgba(49, 50, 68, 0.5) !important;
+  background: var(--active-line) !important;
 }
 
 .cm-editor .cm-cursor {
@@ -146,11 +149,11 @@ html, body {
 }
 
 .cm-editor .cm-selectionBackground {
-  background: rgba(137, 180, 250, 0.2) !important;
+  background: var(--selection-bg) !important;
 }
 
 .cm-editor.cm-focused .cm-selectionBackground {
-  background: rgba(137, 180, 250, 0.3) !important;
+  background: var(--selection-bg) !important;
 }
 
 .cm-editor .cm-content {
@@ -181,7 +184,7 @@ html, body {
 .cm-editor .cm-monospace,
 .cm-editor .cm-inline-code {
   color: var(--green);
-  background: rgba(166, 227, 161, 0.1);
+  background: var(--code-bg);
   border-radius: 3px;
   padding: 1px 3px;
 }
