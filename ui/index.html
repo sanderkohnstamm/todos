@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todos</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="panes">
+      <div class="pane" id="todo-pane">
+        <div class="pane-header">
+          <span class="pane-title">todo.md</span>
+          <span class="pane-badge" id="todo-dirty" style="display:none">[+]</span>
+        </div>
+        <div id="todo-editor"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="pane" id="finished-pane">
+        <div class="pane-header">
+          <span class="pane-title">finished.md</span>
+          <span class="pane-badge" id="finished-dirty" style="display:none">[+]</span>
+        </div>
+        <div id="finished-editor"></div>
+      </div>
+    </div>
+    <div id="status-bar">
+      <span id="status-message">Ready</span>
+      <span id="status-help">Ctrl+S: save · Ctrl+Enter: complete/recover · Ctrl+Tab: switch pane</span>
+    </div>
+  </div>
+
+  <script src="bundle.js"></script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run build",
+    "devPath": "../ui",
+    "distDir": "../ui"
+  },
+  "package": {
+    "productName": "Todos",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "open": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "identifier": "com.sanderkohnstamm.todos",
+      "icon": ["icons/icon.png"],
+      "targets": "all"
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "title": "Todos",
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ]
+  }
+}
