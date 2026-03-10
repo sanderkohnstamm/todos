@@ -1,31 +1,14 @@
 {
+  "productName": "Todos",
+  "version": "0.1.0",
+  "identifier": "com.sanderkohnstamm.todos",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run build",
-    "devPath": "../ui",
-    "distDir": "../ui",
-    "withGlobalTauri": true
+    "frontendDist": "../ui"
   },
-  "package": {
-    "productName": "Todos",
-    "version": "0.1.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "open": true
-      }
-    },
-    "bundle": {
-      "active": true,
-      "identifier": "com.sanderkohnstamm.todos",
-      "icon": ["icons/icon.png"],
-      "targets": "all"
-    },
-    "security": {
-      "csp": null
-    },
+  "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Todos",
@@ -34,6 +17,14 @@
         "resizable": true,
         "fullscreen": false
       }
-    ]
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": ["icons/icon.png"],
+    "targets": "all"
   }
 }

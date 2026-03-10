@@ -1,7 +1,4 @@
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod finished;
 
@@ -18,6 +15,8 @@ fn todos_dir() -> PathBuf {
 struct FilesPayload {
     todo: String,
     finished: String,
+    todo_path: String,
+    finished_path: String,
 }
 
 #[derive(Serialize)]
@@ -42,7 +41,10 @@ fn load_files() -> FilesPayload {
         finished_raw
     };
 
-    FilesPayload { todo, finished }
+    let todo_path = dir.join("todo.md").to_string_lossy().to_string();
+    let finished_path = dir.join("finished.md").to_string_lossy().to_string();
+
+    FilesPayload { todo, finished, todo_path, finished_path }
 }
 
 #[tauri::command]

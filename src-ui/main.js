@@ -4,9 +4,25 @@ import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
 import { languages } from '@codemirror/language-data';
 import { keymap, drawSelection } from '@codemirror/view';
 import { indentWithTab } from '@codemirror/commands';
+import { foldService, foldAll, unfoldAll, toggleFold, foldedRanges } from '@codemirror/language';
 import { palettes, applyPalette } from './themes.js';
 
-const { invoke } = window.__TAURI__.tauri;
+const headingFold = foldService.of((state, lineStart, lineEnd) => {
+  const line = state.doc.lineAt(lineStart);
+  const match = /^(#{1,6})\s/.exec(line.text);
+  if (!match) return null;
+  const level = match[1].length;
+  let end = lineEnd;
+  for (let i = line.number + 1; i <= state.doc.lines; i++) {
+    const next = state.doc.line(i);
+    const nextMatch = /^(#{1,6})\s/.exec(next.text);
+    if (nextMatch && nextMatch[1].length <= level) break;
+    end = next.to;
+  }
+  return end > lineEnd ? { from: lineEnd, to: end } : null;
+});
+
+const { invoke } = window.__TAURI__.core;
 
 let todoView = null;
 let finishedView = null;
@@ -117,6 +133,18 @@ function createEditor(parent, content, pane) {
       key: 'Mod-Enter',
       run: () => { completeItem(); return true; },
     },
+    {
+      key: 'Mod-e',
+      run: (view) => { toggleFold(view); return true; },
+    },
+    {
+      key: 'Mod-Shift-e',
+      run: (view) => {
+        const hasFolded = foldedRanges(view.state).size > 0;
+        if (hasFolded) unfoldAll(view); else foldAll(view);
+        return true;
+      },
+    },
   ]);
 
   const state = EditorState.create({
@@ -126,6 +154,7 @@ function createEditor(parent, content, pane) {
       basicSetup,
       keymap.of([indentWithTab]),
       markdown({ base: markdownLanguage, codeLanguages: languages }),
+      headingFold,
       changeListener,
       EditorView.lineWrapping,
     ],
@@ -181,8 +210,18 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+function setHelpText() {
+  const mod = navigator.platform.includes('Mac') ? '⌘' : 'Ctrl';
+  const shift = navigator.platform.includes('Mac') ? '⇧' : 'Shift';
+  document.getElementById('status-help').textContent =
+    `${mod}+S: save · ${mod}+Enter: complete/recover · ${mod}+\\: switch pane · ${mod}+B: toggle finished · ${mod}+K: theme · ${mod}+E: toggle fold · ${mod}+${shift}+E: toggle fold all · Tab: indent`;
+}
+
 async function init() {
   const files = await invoke('load_files');
+
+  document.querySelector('#todo-pane .pane-title').textContent = files.todo_path;
+  document.querySelector('#finished-pane .pane-title').textContent = files.finished_path;
 
   todoView = createEditor(
     document.getElementById('todo-editor'),
@@ -197,6 +236,7 @@ async function init() {
   );
 
   applyPalette(palettes[currentPalette]);
+  setHelpText();
   focusedPane = 'todo';
   updateFocus();
   todoView.focus();

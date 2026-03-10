@@ -168,26 +168,37 @@ html, body {
   padding: 0 8px;
 }
 
-/* Markdown syntax highlighting */
-.cm-editor .cm-header-1 { color: var(--blue); font-weight: bold; font-size: 1.3em; }
-.cm-editor .cm-header-2 { color: var(--blue); font-size: 1.15em; }
-.cm-editor .cm-header-3 { color: var(--teal); }
-.cm-editor .cm-strong { color: var(--text); font-weight: bold; }
-.cm-editor .cm-em { color: var(--text); font-style: italic; }
-.cm-editor .cm-strikethrough { text-decoration: line-through; color: var(--subtext); }
-.cm-editor .cm-link { color: var(--blue); }
-.cm-editor .cm-url { color: var(--subtext); }
-.cm-editor .cm-quote { color: var(--subtext); font-style: italic; }
-.cm-editor .cm-list { color: var(--mauve); }
-
-/* Inline code */
+/* All text same color — no syntax highlighting colors */
+.cm-editor .cm-header-1,
+.cm-editor .cm-header-2,
+.cm-editor .cm-header-3,
+.cm-editor .cm-header-4,
+.cm-editor .cm-header-5,
+.cm-editor .cm-header-6,
+.cm-editor .cm-strong,
+.cm-editor .cm-em,
+.cm-editor .cm-strikethrough,
+.cm-editor .cm-link,
+.cm-editor .cm-url,
+.cm-editor .cm-quote,
+.cm-editor .cm-list,
 .cm-editor .cm-monospace,
-.cm-editor .cm-inline-code {
-  color: var(--green);
-  background: var(--code-bg);
-  border-radius: 3px;
-  padding: 1px 3px;
+.cm-editor .cm-inline-code,
+.cm-editor .cm-meta,
+.cm-editor .cm-keyword,
+.cm-editor .cm-atom,
+.cm-editor .cm-number,
+.cm-editor .cm-string,
+.cm-editor .cm-variableName,
+.cm-editor .cm-comment {
+  color: var(--text) !important;
 }
+
+.cm-editor .cm-header-1 { font-weight: bold; font-size: 1.3em; }
+.cm-editor .cm-header-2 { font-size: 1.15em; }
+.cm-editor .cm-strong { font-weight: bold; }
+.cm-editor .cm-em { font-style: italic; }
+.cm-editor .cm-strikethrough { text-decoration: line-through; }
 
 /* Unfocused pane dimming */
 .pane:not(.focused) .cm-editor {
