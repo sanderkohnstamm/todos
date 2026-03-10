@@ -1,14 +1,22 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod finished;
+mod settings;
 
 use std::path::PathBuf;
 use serde::Serialize;
 use chrono::Local;
 
 fn todos_dir() -> PathBuf {
-    let home = dirs::home_dir().expect("Could not find home directory");
-    home.join(".todos")
+    let s = settings::load();
+    let path = if s.storage_mode == "git" && !s.git_repo.is_empty() {
+        // For git mode, still use local_path as the working directory
+        PathBuf::from(&s.local_path)
+    } else {
+        PathBuf::from(&s.local_path)
+    };
+    let _ = std::fs::create_dir_all(&path);
+    path
 }
 
 #[derive(Serialize)]
@@ -31,7 +39,7 @@ struct CompleteResult {
 #[tauri::command]
 fn load_files() -> FilesPayload {
     let dir = todos_dir();
-    let _ = std::fs::create_dir_all(&dir);
+    let settings = settings::load();
 
     let todo = std::fs::read_to_string(dir.join("todo.md")).unwrap_or_default();
     let today_content = std::fs::read_to_string(dir.join("today.md")).unwrap_or_default();
@@ -39,7 +47,7 @@ fn load_files() -> FilesPayload {
 
     let today_date = Local::now().date_naive();
     let done = if !done_raw.trim().is_empty() {
-        finished::fill_empty_days(&done_raw, today_date)
+        finished::fill_empty_days(&done_raw, today_date, &settings.date_format)
     } else {
         done_raw
     };
@@ -54,7 +62,6 @@ fn load_files() -> FilesPayload {
 #[tauri::command]
 fn save_files(todo: String, today: String, done: String) -> String {
     let dir = todos_dir();
-    let _ = std::fs::create_dir_all(&dir);
     let _ = std::fs::write(dir.join("todo.md"), &todo);
     let _ = std::fs::write(dir.join("today.md"), &today);
     let _ = std::fs::write(dir.join("done.md"), &done);
@@ -63,10 +70,10 @@ fn save_files(todo: String, today: String, done: String) -> String {
 
 #[tauri::command]
 fn complete_item(source: String, target: String, cursor_line: usize, to_done: bool) -> CompleteResult {
+    let settings = settings::load();
     if to_done {
-        // Moving from today -> done (with breadcrumb + date header)
         let today = Local::now().date_naive();
-        match finished::complete_item(&source, &target, cursor_line, today) {
+        match finished::complete_item(&source, &target, cursor_line, today, &settings.date_format) {
             Some((new_source, new_target)) => CompleteResult {
                 source: new_source,
                 target: new_target,
@@ -79,7 +86,6 @@ fn complete_item(source: String, target: String, cursor_line: usize, to_done: bo
             },
         }
     } else {
-        // Moving from todo -> today (simple move)
         match finished::move_item(&source, &target, cursor_line) {
             Some((new_source, new_target)) => CompleteResult {
                 source: new_source,
@@ -98,7 +104,6 @@ fn complete_item(source: String, target: String, cursor_line: usize, to_done: bo
 #[tauri::command]
 fn recover_item(source: String, target: String, cursor_line: usize, from_done: bool) -> CompleteResult {
     if from_done {
-        // Recovering from done -> todo (strip breadcrumb)
         match finished::recover_item(&source, &target, cursor_line) {
             Some((new_source, new_target)) => CompleteResult {
                 source: new_source,
@@ -112,7 +117,6 @@ fn recover_item(source: String, target: String, cursor_line: usize, from_done: b
             },
         }
     } else {
-        // Moving from today -> todo (simple move back)
         match finished::move_item(&source, &target, cursor_line) {
             Some((new_source, new_target)) => CompleteResult {
                 source: new_source,
@@ -128,6 +132,36 @@ fn recover_item(source: String, target: String, cursor_line: usize, from_done: b
     }
 }
 
+#[tauri::command]
+fn load_settings() -> settings::Settings {
+    settings::load()
+}
+
+#[tauri::command]
+fn save_settings(
+    storage_mode: String,
+    local_path: String,
+    git_repo: String,
+    theme_index: usize,
+    date_format: String,
+    layout: String,
+    pane_sizes: Vec<f64>,
+    setup_done: bool,
+) -> Result<String, String> {
+    let s = settings::Settings {
+        storage_mode,
+        local_path,
+        git_repo,
+        theme_index,
+        date_format,
+        layout,
+        pane_sizes,
+        setup_done,
+    };
+    settings::save(&s)?;
+    Ok("Settings saved".to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -135,6 +169,8 @@ fn main() {
             save_files,
             complete_item,
             recover_item,
+            load_settings,
+            save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

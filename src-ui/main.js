@@ -95,7 +95,7 @@ async function completeItem() {
       changes: { from: 0, to: views.today.state.doc.length, insert: result.target },
     });
     await save(true);
-    showMessage(result.message);
+    showMessage('todo → today');
   } else if (focusedPane === 'today') {
     // today -> done
     const source = views.today.state.doc.toString();
@@ -112,7 +112,28 @@ async function completeItem() {
       changes: { from: 0, to: views.done.state.doc.length, insert: result.target },
     });
     await save(true);
-    showMessage(result.message);
+    showMessage('today → done');
+  }
+}
+
+async function sendBack() {
+  if (focusedPane === 'today') {
+    // today -> todo (send back)
+    const source = views.today.state.doc.toString();
+    const target = views.todo.state.doc.toString();
+    const cursorLine = getCursorLine(views.today);
+    const result = await invoke('recover_item', { source, target, cursorLine, fromDone: false });
+
+    const cursorPos = Math.min(views.today.state.selection.main.head, result.source.length);
+    views.today.dispatch({
+      changes: { from: 0, to: views.today.state.doc.length, insert: result.source },
+      selection: { anchor: cursorPos },
+    });
+    views.todo.dispatch({
+      changes: { from: 0, to: views.todo.state.doc.length, insert: result.target },
+    });
+    await save(true);
+    showMessage('today → todo');
   } else if (focusedPane === 'done') {
     // done -> todo (recover)
     const source = views.done.state.doc.toString();
@@ -121,15 +142,15 @@ async function completeItem() {
     const result = await invoke('recover_item', { source, target, cursorLine, fromDone: true });
 
     const cursorPos = Math.min(views.done.state.selection.main.head, result.source.length);
-    views.todo.dispatch({
-      changes: { from: 0, to: views.todo.state.doc.length, insert: result.target },
-    });
     views.done.dispatch({
       changes: { from: 0, to: views.done.state.doc.length, insert: result.source },
       selection: { anchor: cursorPos },
     });
+    views.todo.dispatch({
+      changes: { from: 0, to: views.todo.state.doc.length, insert: result.target },
+    });
     await save(true);
-    showMessage(result.message);
+    showMessage('done → todo');
   }
 }
 
@@ -183,6 +204,10 @@ function createEditor(parent, content, pane) {
     {
       key: 'Mod-Enter',
       run: () => { completeItem(); return true; },
+    },
+    {
+      key: 'Mod-Shift-Enter',
+      run: () => { sendBack(); return true; },
     },
     {
       key: 'Mod-b',
@@ -246,7 +271,212 @@ function cyclePalette() {
   currentPalette = (currentPalette + 1) % palettes.length;
   const p = palettes[currentPalette];
   applyPalette(p);
+  saveThemeToSettings(currentPalette);
   showMessage(`Theme: ${p.name}`);
+}
+
+async function saveThemeToSettings(idx) {
+  const s = await invoke('load_settings');
+  await invoke('save_settings', {
+    storageMode: s.storage_mode,
+    localPath: s.local_path,
+    gitRepo: s.git_repo,
+    themeIndex: idx,
+    dateFormat: s.date_format,
+    layout: s.layout,
+    paneSizes: s.pane_sizes,
+    setupDone: s.setup_done,
+  });
+}
+
+// --- Layout ---
+function applyLayout(layout, sizes) {
+  const panesEl = document.getElementById('panes');
+  panesEl.style.flexDirection = layout === 'vertical' ? 'column' : 'row';
+
+  const dividers = document.querySelectorAll('.divider');
+  dividers.forEach(d => {
+    if (layout === 'vertical') {
+      d.style.width = '';
+      d.style.height = '1px';
+      d.style.cursor = 'row-resize';
+    } else {
+      d.style.height = '';
+      d.style.width = '1px';
+      d.style.cursor = 'col-resize';
+    }
+  });
+
+  document.getElementById('todo-pane').style.flex = sizes[0];
+  document.getElementById('today-pane').style.flex = sizes[1];
+  document.getElementById('done-pane').style.flex = sizes[2];
+}
+
+function initDividerDrag() {
+  const dividers = document.querySelectorAll('.divider');
+  const paneEls = [
+    document.getElementById('todo-pane'),
+    document.getElementById('today-pane'),
+    document.getElementById('done-pane'),
+  ];
+
+  dividers.forEach((divider, idx) => {
+    divider.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const isVertical = settingsState.layout === 'vertical';
+      const panesEl = document.getElementById('panes');
+      const totalSize = isVertical ? panesEl.offsetHeight : panesEl.offsetWidth;
+
+      const startPos = isVertical ? e.clientY : e.clientX;
+      const leftPane = paneEls[idx];
+      const rightPane = paneEls[idx + 1];
+      const startLeft = isVertical ? leftPane.offsetHeight : leftPane.offsetWidth;
+      const startRight = isVertical ? rightPane.offsetHeight : rightPane.offsetWidth;
+
+      function onMove(e) {
+        const delta = (isVertical ? e.clientY : e.clientX) - startPos;
+        const newLeft = Math.max(50, startLeft + delta);
+        const newRight = Math.max(50, startRight - delta);
+        const leftPct = (newLeft / totalSize) * 100;
+        const rightPct = (newRight / totalSize) * 100;
+        leftPane.style.flex = leftPct;
+        rightPane.style.flex = rightPct;
+        settingsState.paneSizes[idx] = leftPct;
+        settingsState.paneSizes[idx + 1] = rightPct;
+      }
+
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        // Persist sizes
+        savePaneSizes();
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+async function savePaneSizes() {
+  const s = await invoke('load_settings');
+  await invoke('save_settings', {
+    storageMode: s.storage_mode,
+    localPath: s.local_path,
+    gitRepo: s.git_repo,
+    themeIndex: s.theme_index,
+    dateFormat: s.date_format,
+    layout: s.layout,
+    paneSizes: settingsState.paneSizes,
+    setupDone: s.setup_done,
+  });
+}
+
+// --- Settings panel ---
+let settingsState = { storageMode: 'local', localPath: '', gitRepo: '', themeIndex: 0, dateFormat: '%Y-%m-%d', layout: 'horizontal', paneSizes: [40, 30, 30] };
+
+function openSettings(isFirstTime) {
+  const overlay = document.getElementById('settings-overlay');
+  overlay.style.display = 'flex';
+
+  const title = document.getElementById('settings-title');
+  title.textContent = isFirstTime ? 'Welcome to Tally.md' : 'Settings';
+
+  const cancel = document.getElementById('settings-cancel');
+  cancel.style.display = isFirstTime ? 'none' : '';
+
+  // Storage mode buttons
+  document.querySelectorAll('[data-mode]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.mode === settingsState.storageMode);
+    btn.onclick = () => {
+      settingsState.storageMode = btn.dataset.mode;
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === settingsState.storageMode));
+      document.getElementById('group-local-path').style.display = settingsState.storageMode === 'local' ? '' : 'none';
+      document.getElementById('group-git-repo').style.display = settingsState.storageMode === 'git' ? '' : 'none';
+    };
+  });
+
+  document.getElementById('group-local-path').style.display = settingsState.storageMode === 'local' ? '' : 'none';
+  document.getElementById('group-git-repo').style.display = settingsState.storageMode === 'git' ? '' : 'none';
+
+  document.getElementById('settings-path').value = settingsState.localPath;
+  document.getElementById('settings-git-repo').value = settingsState.gitRepo;
+
+  // Theme swatches
+  const picker = document.getElementById('theme-picker');
+  picker.innerHTML = '';
+  palettes.forEach((p, i) => {
+    const swatch = document.createElement('div');
+    swatch.className = 'theme-swatch' + (i === settingsState.themeIndex ? ' active' : '');
+    swatch.style.background = p.bg;
+    swatch.style.borderColor = i === settingsState.themeIndex ? p.text : p.border;
+    swatch.title = p.name;
+    swatch.onclick = () => {
+      settingsState.themeIndex = i;
+      picker.querySelectorAll('.theme-swatch').forEach((s, j) => {
+        s.classList.toggle('active', j === i);
+        s.style.borderColor = j === i ? palettes[j].text : palettes[j].border;
+      });
+      currentPalette = i;
+      applyPalette(palettes[i]);
+    };
+    picker.appendChild(swatch);
+  });
+
+  // Layout buttons
+  document.querySelectorAll('[data-layout]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.layout === settingsState.layout);
+    btn.onclick = () => {
+      settingsState.layout = btn.dataset.layout;
+      document.querySelectorAll('[data-layout]').forEach(b => b.classList.toggle('active', b.dataset.layout === settingsState.layout));
+      applyLayout(settingsState.layout, settingsState.paneSizes);
+    };
+  });
+
+  // Date format buttons
+  document.querySelectorAll('[data-fmt]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.fmt === settingsState.dateFormat);
+    btn.onclick = () => {
+      settingsState.dateFormat = btn.dataset.fmt;
+      document.querySelectorAll('[data-fmt]').forEach(b => b.classList.toggle('active', b.dataset.fmt === settingsState.dateFormat));
+    };
+  });
+
+  // Save button
+  document.getElementById('settings-save').onclick = async () => {
+    settingsState.localPath = document.getElementById('settings-path').value || settingsState.localPath;
+    settingsState.gitRepo = document.getElementById('settings-git-repo').value || '';
+
+    await invoke('save_settings', {
+      storageMode: settingsState.storageMode,
+      localPath: settingsState.localPath,
+      gitRepo: settingsState.gitRepo,
+      themeIndex: settingsState.themeIndex,
+      dateFormat: settingsState.dateFormat,
+      layout: settingsState.layout,
+      paneSizes: settingsState.paneSizes,
+      setupDone: true,
+    });
+
+    overlay.style.display = 'none';
+    showMessage('Settings saved');
+
+    // Reload files from potentially new path
+    const files = await invoke('load_files');
+    document.querySelector('#todo-pane .pane-title').textContent = files.todo_path;
+    document.querySelector('#today-pane .pane-title').textContent = files.today_path;
+    document.querySelector('#done-pane .pane-title').textContent = files.done_path;
+    views.todo.dispatch({ changes: { from: 0, to: views.todo.state.doc.length, insert: files.todo } });
+    views.today.dispatch({ changes: { from: 0, to: views.today.state.doc.length, insert: files.today } });
+    views.done.dispatch({ changes: { from: 0, to: views.done.state.doc.length, insert: files.done } });
+  };
+
+  // Cancel button
+  document.getElementById('settings-cancel').onclick = () => {
+    overlay.style.display = 'none';
+    // Revert theme if changed
+    applyPalette(palettes[currentPalette]);
+  };
 }
 
 function cyclePane(direction) {
@@ -263,7 +493,10 @@ function cyclePane(direction) {
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === '\\') {
+    e.preventDefault();
+    cyclePane(-1);
+  } else if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
     e.preventDefault();
     cyclePane(1);
   }
@@ -275,16 +508,40 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     cyclePalette();
   }
+  if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+    e.preventDefault();
+    openSettings(false);
+  }
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('settings-overlay');
+    if (overlay.style.display !== 'none') {
+      overlay.style.display = 'none';
+      applyPalette(palettes[currentPalette]);
+    }
+  }
 });
 
 function setHelpText() {
   const mod = navigator.platform.includes('Mac') ? '⌘' : 'Ctrl';
   const shift = navigator.platform.includes('Mac') ? '⇧' : 'Shift';
   document.getElementById('status-help').textContent =
-    `${mod}+Enter: move item → · ${mod}+\\: switch pane · ${mod}+${shift}+B: toggle done · ${mod}+S: save · ${mod}+B: bold · ${mod}+I: italic · ${mod}+K: theme · ${mod}+E: fold`;
+    `${mod}+Enter: move → · ${mod}+${shift}+Enter: send ← · ${mod}+\\: pane · ${mod}+${shift}+B: toggle done · ${mod}+S: save · ${mod}+K: theme · ${mod}+,: settings`;
 }
 
 async function init() {
+  // Load settings first
+  const settings = await invoke('load_settings');
+  settingsState = {
+    storageMode: settings.storage_mode,
+    localPath: settings.local_path,
+    gitRepo: settings.git_repo,
+    themeIndex: settings.theme_index,
+    dateFormat: settings.date_format,
+    layout: settings.layout || 'horizontal',
+    paneSizes: settings.pane_sizes || [40, 30, 30],
+  };
+  currentPalette = settings.theme_index;
+
   const files = await invoke('load_files');
 
   document.querySelector('#todo-pane .pane-title').textContent = files.todo_path;
@@ -310,11 +567,18 @@ async function init() {
   );
 
   applyPalette(palettes[currentPalette]);
+  applyLayout(settingsState.layout, settingsState.paneSizes);
+  initDividerDrag();
   setHelpText();
   focusedPane = 'todo';
   updateFocus();
   views.todo.focus();
-  showMessage('Ready');
+
+  if (!settings.setup_done) {
+    openSettings(true);
+  } else {
+    showMessage('Ready');
+  }
 }
 
 init();

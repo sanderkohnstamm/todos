@@ -44,6 +44,7 @@ pub fn complete_item(
     finished_text: &str,
     cursor_line: usize,
     today: NaiveDate,
+    date_format: &str,
 ) -> Option<(String, String)> {
     let todo_lines: Vec<&str> = todo_text.lines().collect();
     if cursor_line >= todo_lines.len() {
@@ -73,7 +74,7 @@ pub fn complete_item(
     }
 
     // Add to finished under today's header
-    let new_finished = insert_into_finished(finished_text, today, &entry);
+    let new_finished = insert_into_finished(finished_text, today, &entry, date_format);
 
     Some((new_todo.join("\n"), new_finished))
 }
@@ -128,13 +129,13 @@ pub fn recover_item(
 }
 
 /// Fill empty day headers between oldest existing date and today.
-pub fn fill_empty_days(text: &str, today: NaiveDate) -> String {
+pub fn fill_empty_days(text: &str, today: NaiveDate, date_format: &str) -> String {
     let lines: Vec<&str> = text.lines().collect();
 
     let mut dates: Vec<NaiveDate> = Vec::new();
     for line in &lines {
         if let Some(date_str) = line.strip_prefix("## ") {
-            if let Ok(date) = NaiveDate::parse_from_str(date_str.trim(), "%Y-%m-%d") {
+            if let Some(date) = parse_date_flexible(date_str.trim()) {
                 dates.push(date);
             }
         }
@@ -157,7 +158,7 @@ pub fn fill_empty_days(text: &str, today: NaiveDate) -> String {
     let mut date = oldest;
     while date <= newest {
         if !dates.contains(&date) {
-            let header = format!("## {}", date.format("%Y-%m-%d"));
+            let header = format!("## {}", date.format(date_format));
             let pos = find_date_insert_position(&result_lines, date);
             result_lines.insert(pos, String::new());
             result_lines.insert(pos, header);
@@ -168,17 +169,28 @@ pub fn fill_empty_days(text: &str, today: NaiveDate) -> String {
     result_lines.join("\n")
 }
 
-fn insert_into_finished(finished_text: &str, today: NaiveDate, entry: &str) -> String {
+fn insert_into_finished(finished_text: &str, today: NaiveDate, entry: &str, date_format: &str) -> String {
     let mut lines: Vec<String> = if finished_text.trim().is_empty() {
         Vec::new()
     } else {
         finished_text.lines().map(|l| l.to_string()).collect()
     };
 
-    let date_header = format!("## {}", today.format("%Y-%m-%d"));
-    let header_idx = lines.iter().position(|l| l == &date_header);
+    let date_header = format!("## {}", today.format(date_format));
+
+    // Find today's header — match by parsed date, not string, so format changes still work
+    let header_idx = lines.iter().position(|l| {
+        if let Some(ds) = l.strip_prefix("## ") {
+            if let Some(d) = parse_date_flexible(ds.trim()) {
+                return d == today;
+            }
+        }
+        false
+    });
 
     if let Some(idx) = header_idx {
+        // Update header to current format
+        lines[idx] = date_header;
         let mut insert_at = idx + 1;
         while insert_at < lines.len() {
             let trimmed = lines[insert_at].trim();
@@ -204,7 +216,7 @@ fn insert_into_finished(finished_text: &str, today: NaiveDate, entry: &str) -> S
 fn find_date_insert_position(lines: &[String], date: NaiveDate) -> usize {
     for (i, line) in lines.iter().enumerate() {
         if let Some(date_str) = line.strip_prefix("## ") {
-            if let Ok(existing) = NaiveDate::parse_from_str(date_str.trim(), "%Y-%m-%d") {
+            if let Some(existing) = parse_date_flexible(date_str.trim()) {
                 if date > existing {
                     return i;
                 }
@@ -212,6 +224,17 @@ fn find_date_insert_position(lines: &[String], date: NaiveDate) -> usize {
         }
     }
     lines.len()
+}
+
+/// Try parsing a date string in common formats.
+fn parse_date_flexible(s: &str) -> Option<NaiveDate> {
+    let formats = ["%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"];
+    for fmt in &formats {
+        if let Ok(d) = NaiveDate::parse_from_str(s, fmt) {
+            return Some(d);
+        }
+    }
+    None
 }
 
 fn breadcrumb_for(lines: &[&str], line_idx: usize) -> Vec<String> {

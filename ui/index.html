@@ -39,6 +39,58 @@
     </div>
   </div>
 
+  <!-- Settings panel overlay -->
+  <div id="settings-overlay" style="display:none">
+    <div id="settings-panel">
+      <h2 id="settings-title">Settings</h2>
+
+      <div class="settings-group">
+        <label class="settings-label">Storage</label>
+        <div class="settings-row">
+          <button class="settings-btn" id="btn-local" data-mode="local">Local folder</button>
+          <button class="settings-btn" id="btn-git" data-mode="git">Git repo</button>
+        </div>
+      </div>
+
+      <div class="settings-group" id="group-local-path">
+        <label class="settings-label">Path</label>
+        <input type="text" id="settings-path" class="settings-input" placeholder="~/.todos">
+      </div>
+
+      <div class="settings-group" id="group-git-repo" style="display:none">
+        <label class="settings-label">Git repository URL</label>
+        <input type="text" id="settings-git-repo" class="settings-input" placeholder="https://github.com/user/todos.git">
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Theme</label>
+        <div id="theme-picker" class="settings-row"></div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Layout</label>
+        <div class="settings-row">
+          <button class="settings-btn" data-layout="horizontal">Side by side</button>
+          <button class="settings-btn" data-layout="vertical">Stacked</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Date format</label>
+        <div class="settings-row">
+          <button class="settings-btn" data-fmt="%Y-%m-%d">2026-03-10</button>
+          <button class="settings-btn" data-fmt="%d/%m/%Y">10/03/2026</button>
+          <button class="settings-btn" data-fmt="%m/%d/%Y">03/10/2026</button>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-primary-btn">Save</button>
+        <button id="settings-cancel" class="settings-secondary-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script src="bundle.js"></script>
 </body>
 </html>
