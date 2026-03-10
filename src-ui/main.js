@@ -112,6 +112,39 @@ async function completeItem() {
   }
 }
 
+function toggleWrap(view, mark) {
+  const { from, to } = view.state.selection.main;
+  const len = mark.length;
+  const doc = view.state.doc;
+  const selected = doc.sliceString(from, to);
+
+  // Check if selection is already wrapped
+  if (from >= len && to + len <= doc.length) {
+    const before = doc.sliceString(from - len, from);
+    const after = doc.sliceString(to, to + len);
+    if (before === mark && after === mark) {
+      view.dispatch({
+        changes: [
+          { from: from - len, to: from, insert: '' },
+          { from: to, to: to + len, insert: '' },
+        ],
+        selection: { anchor: from - len, head: to - len },
+      });
+      return true;
+    }
+  }
+
+  // Wrap selection
+  view.dispatch({
+    changes: [
+      { from, insert: mark },
+      { from: to, insert: mark },
+    ],
+    selection: { anchor: from + len, head: to + len },
+  });
+  return true;
+}
+
 function createEditor(parent, content, pane) {
   const changeListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
@@ -132,6 +165,14 @@ function createEditor(parent, content, pane) {
     {
       key: 'Mod-Enter',
       run: () => { completeItem(); return true; },
+    },
+    {
+      key: 'Mod-b',
+      run: (view) => toggleWrap(view, '**'),
+    },
+    {
+      key: 'Mod-i',
+      run: (view) => toggleWrap(view, '*'),
     },
     {
       key: 'Mod-e',
@@ -200,7 +241,7 @@ document.addEventListener('keydown', (e) => {
     updateFocus();
     getActiveView().focus();
   }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
     e.preventDefault();
     toggleFinishedPane();
   }
@@ -214,7 +255,7 @@ function setHelpText() {
   const mod = navigator.platform.includes('Mac') ? '⌘' : 'Ctrl';
   const shift = navigator.platform.includes('Mac') ? '⇧' : 'Shift';
   document.getElementById('status-help').textContent =
-    `${mod}+S: save · ${mod}+Enter: complete/recover · ${mod}+\\: switch pane · ${mod}+B: toggle finished · ${mod}+K: theme · ${mod}+E: toggle fold · ${mod}+${shift}+E: toggle fold all · Tab: indent`;
+    `${mod}+S: save · ${mod}+Enter: complete/recover · ${mod}+\\: switch pane · ${mod}+${shift}+B: toggle finished · ${mod}+B: bold · ${mod}+I: italic · ${mod}+K: theme · ${mod}+E: fold · ${mod}+${shift}+E: fold all · Tab: indent`;
 }
 
 async function init() {
