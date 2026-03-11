@@ -52,6 +52,11 @@ html, body {
   -webkit-app-region: drag;
 }
 
+#title-icon {
+  margin-right: 2px;
+  opacity: 0.8;
+}
+
 #title-text {
   font-size: 11px;
   font-weight: 600;
