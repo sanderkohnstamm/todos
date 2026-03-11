@@ -283,6 +283,7 @@ async function saveThemeToSettings(idx) {
     storageMode: s.storage_mode,
     localPath: s.local_path,
     gitRepo: s.git_repo,
+    gitRepoName: s.git_repo_name || 'tally-md-log',
     themeIndex: idx,
     dateFormat: s.date_format,
     layout: s.layout,
@@ -367,6 +368,7 @@ async function savePaneSizes() {
     storageMode: s.storage_mode,
     localPath: s.local_path,
     gitRepo: s.git_repo,
+    gitRepoName: s.git_repo_name || 'tally-md-log',
     themeIndex: s.theme_index,
     dateFormat: s.date_format,
     layout: s.layout,
@@ -377,7 +379,7 @@ async function savePaneSizes() {
 }
 
 // --- Settings panel ---
-let settingsState = { storageMode: 'local', localPath: '', gitRepo: '', themeIndex: 0, dateFormat: '%Y-%m-%d', layout: 'horizontal', paneSizes: [40, 30, 30], syncInterval: 5 };
+let settingsState = { storageMode: 'local', localPath: '', gitRepo: '', gitRepoName: 'tally-md-log', themeIndex: 0, dateFormat: '%Y-%m-%d', layout: 'horizontal', paneSizes: [40, 30, 30], syncInterval: 5 };
 let syncIdleTimeout = null;
 let syncIntervalTimer = null;
 let isSyncing = false;
@@ -480,6 +482,7 @@ function openSettings(isFirstTime) {
     const isGit = mode === 'git';
     document.getElementById('group-local-path').style.display = isGit ? 'none' : '';
     document.getElementById('group-git-repo').style.display = isGit ? '' : 'none';
+    document.getElementById('group-git-url').style.display = isGit ? '' : 'none';
     document.getElementById('group-git-token').style.display = isGit ? '' : 'none';
     document.getElementById('group-sync-interval').style.display = isGit ? '' : 'none';
   };
@@ -497,7 +500,16 @@ function openSettings(isFirstTime) {
   showGitFields(settingsState.storageMode);
 
   document.getElementById('settings-path').value = settingsState.localPath;
+  const repoNameInput = document.getElementById('settings-git-repo-name');
+  repoNameInput.value = settingsState.gitRepoName || 'tally-md-log';
   document.getElementById('settings-git-repo').value = settingsState.gitRepo;
+
+  // Update git URL placeholder when repo name changes
+  repoNameInput.oninput = () => {
+    const name = repoNameInput.value || 'tally-md-log';
+    document.getElementById('settings-git-repo').placeholder = `https://github.com/user/${name}.git`;
+  };
+  repoNameInput.oninput();
 
   // Git token
   const tokenInput = document.getElementById('settings-git-token');
@@ -520,7 +532,7 @@ function openSettings(isFirstTime) {
 
   // Generate token link — auto-detect GitHub/GitLab
   const helpLink = document.getElementById('token-help-link');
-  const repoUrl = document.getElementById('settings-git-repo').value || '';
+  const repoUrl = settingsState.gitRepo || '';
   if (repoUrl.includes('gitlab')) {
     helpLink.href = 'https://gitlab.com/-/user_settings/personal_access_tokens';
   } else {
@@ -579,6 +591,7 @@ function openSettings(isFirstTime) {
   // Save button
   document.getElementById('settings-save').onclick = async () => {
     settingsState.localPath = document.getElementById('settings-path').value || settingsState.localPath;
+    settingsState.gitRepoName = document.getElementById('settings-git-repo-name').value || 'tally-md-log';
     settingsState.gitRepo = document.getElementById('settings-git-repo').value || '';
 
     // Store git token if provided
@@ -595,6 +608,7 @@ function openSettings(isFirstTime) {
       storageMode: settingsState.storageMode,
       localPath: settingsState.localPath,
       gitRepo: settingsState.gitRepo,
+      gitRepoName: settingsState.gitRepoName,
       themeIndex: settingsState.themeIndex,
       dateFormat: settingsState.dateFormat,
       layout: settingsState.layout,
@@ -691,6 +705,7 @@ async function init() {
     storageMode: settings.storage_mode,
     localPath: settings.local_path,
     gitRepo: settings.git_repo,
+    gitRepoName: settings.git_repo_name || 'tally-md-log',
     themeIndex: settings.theme_index,
     dateFormat: settings.date_format,
     layout: settings.layout || 'horizontal',

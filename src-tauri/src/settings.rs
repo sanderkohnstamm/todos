@@ -6,6 +6,7 @@ pub struct Settings {
     pub storage_mode: String,       // "local" or "git"
     pub local_path: String,         // custom path for local storage
     pub git_repo: String,           // git repo URL
+    pub git_repo_name: String,      // repo name for git storage (e.g. "tally-md-log", "tally-md-work")
     pub theme_index: usize,         // index into palettes array
     pub date_format: String,        // e.g. "%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"
     pub layout: String,             // "horizontal" or "vertical"
@@ -26,6 +27,7 @@ impl Default for Settings {
             storage_mode: "local".to_string(),
             local_path: default_path,
             git_repo: String::new(),
+            git_repo_name: "tally-md-log".to_string(),
             theme_index: 0,
             date_format: "%Y-%m-%d".to_string(),
             layout: "horizontal".to_string(),

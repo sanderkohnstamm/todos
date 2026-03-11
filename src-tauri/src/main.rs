@@ -10,7 +10,17 @@ use chrono::Local;
 
 fn todos_dir() -> PathBuf {
     let s = settings::load();
-    let path = PathBuf::from(&s.local_path);
+    let path = if s.storage_mode == "git" && !s.git_repo_name.is_empty() {
+        // Git repos are cloned into ~/.tallymd/repos/<repo_name>/
+        let base = dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".tallymd")
+            .join("repos")
+            .join(&s.git_repo_name);
+        base
+    } else {
+        PathBuf::from(&s.local_path)
+    };
     let _ = std::fs::create_dir_all(&path);
     path
 }
@@ -138,6 +148,7 @@ fn save_settings(
     storage_mode: String,
     local_path: String,
     git_repo: String,
+    git_repo_name: String,
     theme_index: usize,
     date_format: String,
     layout: String,
@@ -149,6 +160,7 @@ fn save_settings(
         storage_mode,
         local_path,
         git_repo,
+        git_repo_name,
         theme_index,
         date_format,
         layout,
@@ -186,7 +198,8 @@ fn git_pull() -> Result<String, String> {
         return Err("Git sync not configured".to_string());
     }
     let token = git_sync::get_token()?;
-    git_sync::pull(&s.git_repo, &s.local_path, &token)
+    let local_path = todos_dir().to_string_lossy().to_string();
+    git_sync::pull(&s.git_repo, &local_path, &token)
 }
 
 #[tauri::command]
@@ -196,7 +209,8 @@ fn git_push() -> Result<String, String> {
         return Err("Git sync not configured".to_string());
     }
     let token = git_sync::get_token()?;
-    git_sync::commit_and_push(&s.git_repo, &s.local_path, &token)
+    let local_path = todos_dir().to_string_lossy().to_string();
+    git_sync::commit_and_push(&s.git_repo, &local_path, &token)
 }
 
 #[tauri::command]
@@ -206,10 +220,11 @@ fn git_sync_full() -> Result<String, String> {
         return Err("Git sync not configured".to_string());
     }
     let token = git_sync::get_token()?;
+    let local_path = todos_dir().to_string_lossy().to_string();
 
     // Pull first, then commit+push
-    let pull_msg = git_sync::pull(&s.git_repo, &s.local_path, &token)?;
-    let push_msg = git_sync::commit_and_push(&s.git_repo, &s.local_path, &token)?;
+    let pull_msg = git_sync::pull(&s.git_repo, &local_path, &token)?;
+    let push_msg = git_sync::commit_and_push(&s.git_repo, &local_path, &token)?;
 
     Ok(format!("{} | {}", pull_msg, push_msg))
 }
