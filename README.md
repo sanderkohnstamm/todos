@@ -40,6 +40,40 @@ All customizable in Settings (`Ctrl+,`). On macOS use `Cmd`.
 
 ![Shortcuts](screenshots/shortcuts.png)
 
+## Example
+
+Your data is just markdown files. Here's what they look like:
+
+**todo.md**
+```markdown
+## Work
+- Review PR for auth service
+- Write integration tests for payment flow
+
+## Personal
+- Research flights to Lisbon
+- Fix squeaky door hinge
+```
+
+**today.md**
+```markdown
+- Fix login redirect bug (#342)
+- Prep slides for Friday demo
+```
+
+**done.md** — items get a breadcrumb showing where they came from:
+```markdown
+## 2026-03-11
+- Merge dark mode PR (Work)
+- Order new monitor stand (Personal)
+
+## 2026-03-10
+- Ship v1.2 hotfix (Work)
+- Book dentist appointment (Personal)
+```
+
+See [`example/`](example/) for full sample files.
+
 ## Storage
 
 **Local:** files in `~/.todos/` (configurable).
