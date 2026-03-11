@@ -60,18 +60,18 @@
       </div>
 
       <div class="settings-group" id="group-git-repo" style="display:none">
-        <label class="settings-label">Repository name</label>
+        <label class="settings-label">Repo name</label>
         <input type="text" id="settings-git-repo-name" class="settings-input" placeholder="tally-md-log">
-        <span class="settings-hint">Name of the Git repo for your files (e.g. tally-md-work, tally-md-home)</span>
+        <span class="settings-hint">e.g. tally-md-work, tally-md-home</span>
       </div>
 
       <div class="settings-group" id="group-git-url" style="display:none">
-        <label class="settings-label">Git repository URL</label>
+        <label class="settings-label">Repo URL</label>
         <input type="text" id="settings-git-repo" class="settings-input" placeholder="https://github.com/user/tally-md-log.git">
       </div>
 
       <div class="settings-group" id="group-git-token" style="display:none">
-        <label class="settings-label">Personal access token <a id="token-help-link" class="settings-link" target="_blank">(generate)</a></label>
+        <label class="settings-label">Token <a id="token-help-link" class="settings-link" target="_blank">(generate)</a></label>
         <div class="settings-row">
           <input type="password" id="settings-git-token" class="settings-input" style="flex:1" placeholder="ghp_xxxxxxxxxxxx">
           <button class="settings-btn" id="btn-toggle-token" type="button">Show</button>
@@ -83,13 +83,12 @@
         <label class="settings-label">Initialize</label>
         <div class="settings-row">
           <button class="settings-btn" id="btn-init-repo">Init repo</button>
-          <span id="init-status" class="settings-hint" style="align-self:center"></span>
+          <span id="init-status" class="settings-hint" style="align-self:center;margin-top:0"></span>
         </div>
-        <span class="settings-hint">Creates the repo and files if they don't exist yet</span>
       </div>
 
       <div class="settings-group" id="group-sync-interval" style="display:none">
-        <label class="settings-label">Auto-sync interval</label>
+        <label class="settings-label">Auto-sync</label>
         <div class="settings-row">
           <button class="settings-btn" data-sync="0">Off</button>
           <button class="settings-btn" data-sync="5">5 min</button>
@@ -124,7 +123,7 @@
         </div>
       </div>
 
-      <div class="settings-group">
+      <div class="settings-group full-width">
         <button class="settings-btn" id="btn-open-shortcuts">Keyboard shortcuts...</button>
       </div>
 

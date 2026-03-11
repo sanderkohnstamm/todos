@@ -140,10 +140,10 @@ html, body {
 }
 
 #storage-mode {
-  color: var(--subtext);
-  opacity: 0.5;
   font-size: 11px;
   margin-right: 8px;
+  color: var(--subtext);
+  opacity: 0.5;
 }
 
 #status-message {
@@ -242,8 +242,8 @@ html, body {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 24px 32px;
-  min-width: 400px;
-  max-width: 500px;
+  min-width: 460px;
+  max-width: 520px;
 }
 
 #settings-title {
@@ -255,21 +255,33 @@ html, body {
 
 .settings-group {
   margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: start;
+  gap: 6px 12px;
+}
+
+.settings-group.full-width {
+  grid-template-columns: 1fr;
 }
 
 .settings-label {
-  display: block;
   color: var(--subtext);
   font-size: 12px;
-  margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding-top: 6px;
+  line-height: 1.4;
 }
 
 .settings-row {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+.settings-hint {
+  grid-column: 2;
 }
 
 .settings-btn {
@@ -327,6 +339,7 @@ html, body {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 24px;
+  grid-column: 1 / -1;
 }
 
 .settings-primary-btn {
@@ -373,11 +386,15 @@ html, body {
   text-decoration: underline;
 }
 
+.settings-group.full-width .settings-hint {
+  grid-column: 1;
+}
+
 .settings-hint {
   display: block;
   font-size: 11px;
   color: var(--subtext);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 /* Shortcuts panel */
@@ -442,7 +459,8 @@ html, body {
 
 .shortcut-key.recording {
   border-color: var(--blue);
-  background: var(--overlay);
+  background: var(--bg);
+  color: var(--blue);
   animation: pulse 1s infinite;
 }
 
@@ -452,6 +470,30 @@ html, body {
 }
 
 /* Sync indicator in status bar */
+#storage-mode {
+  transition: color 0.2s;
+}
+
+#storage-mode.sync-ok {
+  color: var(--green);
+  opacity: 0.8;
+}
+
+#storage-mode.sync-dirty {
+  color: var(--yellow);
+  opacity: 0.9;
+}
+
+#storage-mode.sync-error {
+  color: var(--red);
+  opacity: 0.9;
+}
+
+#storage-mode.sync-active {
+  color: var(--blue);
+  opacity: 0.9;
+}
+
 #sync-status {
   color: var(--subtext);
   font-size: 11px;

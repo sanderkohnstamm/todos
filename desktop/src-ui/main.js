@@ -98,6 +98,9 @@ function updateFocus() {
 
 function markDirty(pane) {
   document.getElementById(`${pane}-dirty`).style.display = 'inline';
+  if (settingsState.storageMode === 'git' && syncState !== 'error') {
+    setSyncState('dirty');
+  }
 }
 
 function clearDirty() {
@@ -517,12 +520,28 @@ let syncIdleTimeout = null;
 let syncIntervalTimer = null;
 let isSyncing = false;
 
+let syncState = 'ok'; // 'ok' | 'dirty' | 'error' | 'active'
+
 function updateStorageIndicator() {
   const el = document.getElementById('storage-mode');
   if (settingsState.storageMode === 'git') {
     el.textContent = 'git: ' + (settingsState.gitRepoName || 'repo');
   } else {
     el.textContent = 'local';
+  }
+  applySyncColor();
+}
+
+function setSyncState(state) {
+  syncState = state;
+  applySyncColor();
+}
+
+function applySyncColor() {
+  const el = document.getElementById('storage-mode');
+  el.className = '';
+  if (settingsState.storageMode === 'git') {
+    el.classList.add('sync-' + syncState);
   }
 }
 
@@ -535,13 +554,16 @@ async function gitSync(silent) {
   if (isSyncing) return;
   if (settingsState.storageMode !== 'git') return;
   isSyncing = true;
+  setSyncState('active');
   updateSyncStatus('syncing...');
   try {
     const result = await invoke('git_sync_full');
     updateSyncStatus('');
+    setSyncState('ok');
     if (!silent) showMessage(result);
   } catch (e) {
     updateSyncStatus(silent ? '' : 'sync error');
+    setSyncState('error');
     if (!silent) showMessage('Sync error: ' + e);
   } finally {
     isSyncing = false;
@@ -552,14 +574,16 @@ async function gitPull(silent) {
   if (isSyncing) return;
   if (settingsState.storageMode !== 'git') return;
   isSyncing = true;
+  setSyncState('active');
   updateSyncStatus('pulling...');
   try {
     const result = await invoke('git_pull');
     updateSyncStatus('');
+    setSyncState('ok');
     if (!silent) showMessage(result);
   } catch (e) {
-    // Don't persist error in status bar for silent pulls
     updateSyncStatus(silent ? '' : 'pull error');
+    setSyncState('error');
     if (!silent) showMessage('Pull error: ' + e);
   }
   // Always reload files — even if pull errored, local files may be fine
@@ -578,13 +602,16 @@ async function gitPush(silent) {
   if (isSyncing) return;
   if (settingsState.storageMode !== 'git') return;
   isSyncing = true;
+  setSyncState('active');
   updateSyncStatus('pushing...');
   try {
     const result = await invoke('git_push');
     updateSyncStatus('');
+    setSyncState('ok');
     if (!silent) showMessage(result);
   } catch (e) {
     updateSyncStatus('push error');
+    setSyncState('error');
     if (!silent) showMessage('Push error: ' + e);
   } finally {
     isSyncing = false;
@@ -887,7 +914,7 @@ function openShortcuts() {
       });
 
       keyEl.classList.add('recording');
-      keyEl.textContent = 'Press keys...';
+      keyEl.textContent = 'Press keys... (Esc to cancel)';
 
       function onKey(e) {
         e.preventDefault();
