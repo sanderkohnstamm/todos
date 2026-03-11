@@ -1,0 +1,3 @@
+- Fix login redirect bug (#342)
+- Prep slides for Friday demo
+- Reply to Alex re: deployment timeline

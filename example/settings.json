@@ -1,0 +1,28 @@
+{
+  "storage_mode": "git",
+  "local_path": "~/.todos",
+  "git_repo": "https://github.com/yourname/tally-md-log.git",
+  "git_repo_name": "tally-md-log",
+  "theme_index": 3,
+  "date_format": "%Y-%m-%d",
+  "layout": "horizontal",
+  "pane_sizes": [40.0, 30.0, 30.0],
+  "sync_interval": 5,
+  "setup_done": true,
+  "keybindings": {
+    "save": "Mod-s",
+    "moveForward": "Mod-Enter",
+    "sendBack": "Mod-Shift-Enter",
+    "skipToDone": "Mod-Shift-d",
+    "bold": "Mod-b",
+    "italic": "Mod-i",
+    "toggleFold": "Mod-e",
+    "toggleFoldAll": "Mod-Shift-e",
+    "cyclePane": "Mod-\\",
+    "cyclePaneBack": "Mod-Shift-\\",
+    "toggleDonePane": "Mod-Shift-b",
+    "sync": "Mod-Shift-s",
+    "cycleTheme": "Mod-k",
+    "openSettings": "Mod-,"
+  }
+}
