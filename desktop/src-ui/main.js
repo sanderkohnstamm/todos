@@ -307,11 +307,6 @@ function changeFontSize(delta) {
   showMessage(`Font size: ${settingsState.fontSize}px`);
 }
 
-async function saveThemeToSettings(idx) {
-  settingsState.themeIndex = idx;
-  await saveSettingsToBackend();
-}
-
 // --- Layout ---
 function applyLayout(layout, sizes) {
   const panesEl = document.getElementById('panes');

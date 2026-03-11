@@ -156,9 +156,8 @@ fn commit_if_dirty(repo: &Repository, token: &str, message: &str) -> Result<bool
 
 /// Ensure the repo is on branch "main". If HEAD points to another branch, rename it.
 fn ensure_main_branch(repo: &Repository) -> Result<(), String> {
-    let head = match repo.head() {
-        Ok(h) => h,
-        Err(_) => return Ok(()),
+    let Ok(head) = repo.head() else {
+        return Ok(());
     };
     let branch_name = head.shorthand().unwrap_or("main").to_string();
     if branch_name == "main" {
@@ -201,20 +200,17 @@ pub fn init_repo(repo_url: &str, local_path: &str, token: &str) -> Result<String
         builder.clone(repo_url, path)
     };
 
-    match clone_result {
-        Ok(repo) => {
-            ensure_main_branch(&repo)?;
-            ensure_files_exist(path)?;
-            commit_if_dirty(&repo, token, "Add missing files")?;
-            Ok("Cloned existing repo".to_string())
-        }
-        Err(_) => {
-            // Clone failed (empty repo or doesn't exist yet) — init fresh
-            let _ = std::fs::create_dir_all(path);
-            ensure_files_exist(path)?;
-            init_and_push(path, repo_url, token)?;
-            Ok("Repo initialized and pushed".to_string())
-        }
+    if let Ok(repo) = clone_result {
+        ensure_main_branch(&repo)?;
+        ensure_files_exist(path)?;
+        commit_if_dirty(&repo, token, "Add missing files")?;
+        Ok("Cloned existing repo".to_string())
+    } else {
+        // Clone failed (empty repo or doesn't exist yet) — init fresh
+        let _ = std::fs::create_dir_all(path);
+        ensure_files_exist(path)?;
+        init_and_push(path, repo_url, token)?;
+        Ok("Repo initialized and pushed".to_string())
     }
 }
 

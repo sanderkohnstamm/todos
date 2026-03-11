@@ -451,7 +451,7 @@ fn insert_at_first_gap(target_text: &str, entry: &str) -> String {
 /// Ensure the lines end with exactly one blank line.
 fn ensure_trailing_blank_line(mut lines: Vec<String>) -> Vec<String> {
     // Remove trailing blank lines
-    while lines.last().map_or(false, |l| l.trim().is_empty()) {
+    while lines.last().is_some_and(|l| l.trim().is_empty()) {
         lines.pop();
     }
     // Add exactly one
