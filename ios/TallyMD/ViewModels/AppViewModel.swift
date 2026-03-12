@@ -15,6 +15,7 @@ final class AppViewModel: ObservableObject {
 
     @Published var expandedPane: PaneType? = .todo
     @Published var cursorLine: Int = 0
+    @Published var isEditing: Bool = false
 
     @Published var settings: AppSettings = .default
     @Published var syncState: SyncState = .ok
@@ -122,6 +123,7 @@ final class AppViewModel: ObservableObject {
 
     func moveForward() {
         guard let pane = expandedPane else { return }
+        isEditing = false
 
         switch pane {
         case .todo:
@@ -152,6 +154,7 @@ final class AppViewModel: ObservableObject {
 
     func moveBack() {
         guard let pane = expandedPane else { return }
+        isEditing = false
 
         switch pane {
         case .todo:
