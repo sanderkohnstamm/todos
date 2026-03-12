@@ -58,11 +58,12 @@ struct MarkdownTextView: UIViewRepresentable {
         textView.insertSubview(highlight, at: 0)
         context.coordinator.highlightView = highlight
 
-        // Tap gesture for line selection
+        // Tap gesture for line selection (only fires when not editing)
         let tap = UITapGestureRecognizer(
             target: context.coordinator,
             action: #selector(Coordinator.handleTap(_:))
         )
+        tap.delegate = context.coordinator
         textView.addGestureRecognizer(tap)
 
         if let um = undoManager {
@@ -109,7 +110,7 @@ struct MarkdownTextView: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, UITextViewDelegate {
+    class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
         var parent: MarkdownTextView
         var externalUndoManager: UndoManager?
         var highlightView: UIView?
@@ -118,13 +119,18 @@ struct MarkdownTextView: UIViewRepresentable {
             self.parent = parent
         }
 
+        // MARK: Gesture Delegate
+
+        /// Only allow the custom tap gesture when not editing,
+        /// so UITextView's built-in gestures handle taps normally during editing.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            !parent.isEditing
+        }
+
         // MARK: Tap Handling
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             guard let textView = gesture.view as? TallyTextView else { return }
-
-            // If already editing, let UITextView handle cursor placement
-            if parent.isEditing { return }
 
             let point = gesture.location(in: textView)
             guard let tappedLine = lineIndex(at: point, in: textView) else { return }
