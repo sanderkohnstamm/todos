@@ -17,6 +17,7 @@ struct PaneView: View {
             // Header bar — tap to expand/collapse
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
+                    vm.isEditing = false
                     if !isExpanded { vm.expandedPane = pane }
                 }
             } label: {
@@ -52,6 +53,7 @@ struct PaneView: View {
                 MarkdownTextView(
                     text: vm.content(for: pane),
                     cursorLine: $vm.cursorLine,
+                    isEditing: $vm.isEditing,
                     theme: vm.theme,
                     undoManager: vm.undoManagers[pane]
                 )
