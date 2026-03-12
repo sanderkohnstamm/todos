@@ -5,6 +5,7 @@ struct ActionBarView: View {
 
     private var backLabel: String {
         switch vm.expandedPane {
+        case .todo: return "done"
         case .today: return "todo"
         case .done: return "today"
         default: return ""
@@ -12,7 +13,7 @@ struct ActionBarView: View {
     }
 
     private var canMoveBack: Bool {
-        vm.expandedPane == .today || vm.expandedPane == .done
+        vm.expandedPane != nil
     }
 
     private var forwardLabel: String {

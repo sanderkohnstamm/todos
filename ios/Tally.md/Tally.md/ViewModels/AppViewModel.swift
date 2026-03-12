@@ -168,7 +168,16 @@ final class AppViewModel: ObservableObject {
 
         switch pane {
         case .todo:
-            break
+            // todo -> done (skip today)
+            if let result = ItemMovementEngine.completeItem(
+                source: todoContent, target: doneContent, cursorLine: cursorLine,
+                today: Date(), dateFormat: settings.dateFormat
+            ) {
+                todoContent = result.0
+                doneContent = result.1
+                saveFiles()
+                showStatus("todo -> done")
+            }
         case .today:
             // today -> todo
             if let result = ItemMovementEngine.moveItemBack(
